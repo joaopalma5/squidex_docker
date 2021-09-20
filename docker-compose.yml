@@ -1,0 +1,48 @@
+version: "3.5"
+
+services:
+  squidex_mongo:
+    image: mongo:latest
+    volumes:
+      - sq_mongo_data:/data/db
+    restart: unless-stopped
+
+  squidex:
+    image: squidex/squidex:latest
+    environment:
+      SQUIDEX_DOMAIN: ${SERVER_NAME}
+      SQUIDEX_PROTOCOL: http
+      urls:basePath: "/squidex"
+      URLS__BASEURL: http://${SERVER_NAME}
+      URLS__ENFORCEHTTPS: ${SQUIDEX_FORCE_HTTPS}
+      EVENTSTORE__MONGODB__CONFIGURATION: mongodb://squidex_mongo
+      STORE__MONGODB__CONFIGURATION: mongodb://squidex_mongo
+      IDENTITY__ADMINEMAIL: ${SQUIDEX_ADMINEMAIL}
+      IDENTITY__ADMINPASSWORD: ${SQUIDEX_ADMINPASSWORD}
+      IDENTITY__GOOGLECLIENT: ${SQUIDEX_GOOGLECLIENT}
+      IDENTITY__GOOGLESECRET: ${SQUIDEX_GOOGLESECRET}
+      IDENTITY__GITHUBCLIENT: ${SQUIDEX_GITHUBCLIENT}
+      IDENTITY__GITHUBSECRET: ${SQUIDEX_GITHUBSECRET}
+      IDENTITY__MICROSOFTCLIENT: ${SQUIDEX_MICROSOFTCLIENT}
+      IDENTITY__MICROSOFTSECRET: ${SQUIDEX_MICROSOFTSECRET}
+    depends_on:
+      - squidex_mongo
+    volumes:
+      - squidex_assets:/app/Assets
+    restart: unless-stopped
+
+  proxy:
+    image: nginx
+    ports:
+      - 80:80
+    environment:
+      SERVER_NAME: ${SERVER_NAME}
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - squidex
+    restart: unless-stopped
+
+volumes:
+  sq_mongo_data:
+  squidex_assets:
